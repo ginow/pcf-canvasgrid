@@ -9,3 +9,4 @@
 ## Building project
 
 - // eslint-disable-next-line no-undef
+- copied from "https://github.com/microsoft/PowerApps-Samples/tree/master/component-framework/CanvasGridControl/CanvasGrid"
