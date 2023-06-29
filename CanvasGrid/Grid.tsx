@@ -1,5 +1,7 @@
 import { useConst, useForceUpdate } from '@fluentui/react-hooks';
+import { IInputs, IOutputs } from "./generated/ManifestTypes";
 import * as React from 'react';
+import { useState } from 'react';
 import { IObjectWithKey, IRenderFunction, SelectionMode } from '@fluentui/react/lib/Utilities';
 import { ConstrainMode, DetailsList, DetailsListLayoutMode, DetailsRow, IColumn, IDetailsHeaderProps, IDetailsListProps, IDetailsRowStyles } from '@fluentui/react/lib/DetailsList';
 import { Sticky, StickyPositionType } from '@fluentui/react/lib/Sticky';
@@ -10,6 +12,7 @@ import { Overlay } from '@fluentui/react/lib/Overlay';
 import { IconButton } from '@fluentui/react/lib/Button';
 import { Selection } from '@fluentui/react/lib/Selection';
 import { Link } from '@fluentui/react/lib/Link';
+import { EditForm } from './EditForm';
 
 type DataSet = ComponentFramework.PropertyHelper.DataSetApi.EntityRecord & IObjectWithKey;
 
@@ -36,13 +39,13 @@ export interface GridProps {
     highlightValue: string | null;
     highlightColor: string | null;
     setSelectedRecords: (ids: string[]) => void;
-    onNavigate: (item?: ComponentFramework.PropertyHelper.DataSetApi.EntityRecord) => void;
     onSort: (name: string, desc: boolean) => void;
     onFilter: (name: string, filtered: boolean) => void;
     loadFirstPage: () => void;
     loadNextPage: () => void;
     loadPreviousPage: () => void;
     onFullScreen: () => void;
+    context: ComponentFramework.Context<IInputs>;
     isFullScreen: boolean;
 }
 
@@ -84,7 +87,6 @@ export const Grid = React.memo((props: GridProps) => {
         currentPage,
         itemsLoading,
         setSelectedRecords,
-        onNavigate,
         onSort,
         onFilter,
         resources,
@@ -92,6 +94,7 @@ export const Grid = React.memo((props: GridProps) => {
         loadNextPage,
         loadPreviousPage,
         onFullScreen,
+        context,
         isFullScreen,
         highlightValue,
         highlightColor,
@@ -266,64 +269,82 @@ export const Grid = React.memo((props: GridProps) => {
 
         return null;
     };
+    const [isEdit, setEdit] = useState(false);
+    const [entityData, setEntityData] = useState<ComponentFramework.PropertyHelper.DataSetApi.EntityRecord>();
+    const onNavigate = (
+        item?: ComponentFramework.PropertyHelper.DataSetApi.EntityRecord
+    ): void => {
+        if (item) {
+            setEdit(true);
+            setEntityData(item)
+            // this.context.parameters.records.openDatasetItem(item.getNamedReference());
+        }
+    };
+    const backButtonClicked = (): void => {
+        setEdit(false);
+    }
 
     return (
-        <Stack verticalFill grow style={rootContainerStyle}>
-            <Stack.Item grow style={{ position: 'relative', backgroundColor: 'white' }}>
-                <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
-                    <DetailsList
-                        columns={gridColumns}
-                        onRenderItemColumn={onRenderItemColumn}
-                        onRenderDetailsHeader={onRenderDetailsHeader}
-                        items={items}
-                        setKey={`set${currentPage}`} // Ensures that the selection is reset when paging
-                        initialFocusedIndex={0}
-                        checkButtonAriaLabel="select row"
-                        layoutMode={DetailsListLayoutMode.fixedColumns}
-                        constrainMode={ConstrainMode.unconstrained}
-                        selection={selection}
-                        onItemInvoked={onNavigate}
-                        onRenderRow={onRenderRow}
-                    ></DetailsList>
-                    {contextualMenuProps && <ContextualMenu {...contextualMenuProps} />}
-                </ScrollablePane>
-                {(itemsLoading || isComponentLoading) && <Overlay />}
-            </Stack.Item>
-            <Stack.Item>
-                <Stack horizontal style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
-                    <Stack.Item grow align="center">
-                        {!isFullScreen && (
-                            <Link onClick={onFullScreen}>{resources.getString('Label_ShowFullScreen')}</Link>
-                        )}
+        <>
+            {isEdit ? <EditForm entityData={entityData} backButtonClicked={backButtonClicked} context={context} /> :
+                <Stack verticalFill grow style={rootContainerStyle}>
+                    <Stack.Item grow style={{ position: 'relative', backgroundColor: 'white' }}>
+                        <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
+                            <DetailsList
+                                columns={gridColumns}
+                                onRenderItemColumn={onRenderItemColumn}
+                                onRenderDetailsHeader={onRenderDetailsHeader}
+                                items={items}
+                                setKey={`set${currentPage}`} // Ensures that the selection is reset when paging
+                                initialFocusedIndex={0}
+                                checkButtonAriaLabel="select row"
+                                layoutMode={DetailsListLayoutMode.fixedColumns}
+                                constrainMode={ConstrainMode.unconstrained}
+                                selection={selection}
+                                onItemInvoked={onNavigate}
+                                onRenderRow={onRenderRow}
+                            ></DetailsList>
+                            {contextualMenuProps && <ContextualMenu {...contextualMenuProps} />}
+                        </ScrollablePane>
+                        {(itemsLoading || isComponentLoading) && <Overlay />}
                     </Stack.Item>
-                    <IconButton
-                        alt="First Page"
-                        iconProps={{ iconName: 'Rewind' }}
-                        disabled={!hasPreviousPage || isComponentLoading || itemsLoading}
-                        onClick={onFirstPage}
-                    />
-                    <IconButton
-                        alt="Previous Page"
-                        iconProps={{ iconName: 'Previous' }}
-                        disabled={!hasPreviousPage || isComponentLoading || itemsLoading}
-                        onClick={onPreviousPage}
-                    />
-                    <Stack.Item align="center">
-                        {stringFormat(
-                            resources.getString('Label_Grid_Footer'),
-                            currentPage.toString(),
-                            selection.getSelectedCount().toString(),
-                        )}
+                    <Stack.Item>
+                        <Stack horizontal style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
+                            <Stack.Item grow align="center">
+                                {!isFullScreen && (
+                                    <Link onClick={onFullScreen}>{resources.getString('Label_ShowFullScreen')}</Link>
+                                )}
+                            </Stack.Item>
+                            <IconButton
+                                alt="First Page"
+                                iconProps={{ iconName: 'Rewind' }}
+                                disabled={!hasPreviousPage || isComponentLoading || itemsLoading}
+                                onClick={onFirstPage}
+                            />
+                            <IconButton
+                                alt="Previous Page"
+                                iconProps={{ iconName: 'Previous' }}
+                                disabled={!hasPreviousPage || isComponentLoading || itemsLoading}
+                                onClick={onPreviousPage}
+                            />
+                            <Stack.Item align="center">
+                                {stringFormat(
+                                    resources.getString('Label_Grid_Footer'),
+                                    currentPage.toString(),
+                                    selection.getSelectedCount().toString(),
+                                )}
+                            </Stack.Item>
+                            <IconButton
+                                alt="Next Page"
+                                iconProps={{ iconName: 'Next' }}
+                                disabled={!hasNextPage || isComponentLoading || itemsLoading}
+                                onClick={onNextPage}
+                            />
+                        </Stack>
                     </Stack.Item>
-                    <IconButton
-                        alt="Next Page"
-                        iconProps={{ iconName: 'Next' }}
-                        disabled={!hasNextPage || isComponentLoading || itemsLoading}
-                        onClick={onNextPage}
-                    />
                 </Stack>
-            </Stack.Item>
-        </Stack>
+            }
+        </>
     );
 });
 

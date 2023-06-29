@@ -27,14 +27,6 @@ export class CanvasGrid
     this.context.parameters.records.setSelectedRecordIds(ids);
   };
 
-  onNavigate = (
-    item?: ComponentFramework.PropertyHelper.DataSetApi.EntityRecord
-  ): void => {
-    if (item) {
-      this.context.parameters.records.openDatasetItem(item.getNamedReference());
-    }
-  };
-
   onSort = (name: string, desc: boolean): void => {
     const sorting = this.context.parameters.records.sorting;
     while (sorting.length > 0) {
@@ -164,7 +156,6 @@ export class CanvasGrid
         highlightValue: this.context.parameters.HighlightValue.raw,
         highlightColor: this.context.parameters.HighlightColor.raw,
         setSelectedRecords: this.setSelectedRecords,
-        onNavigate: this.onNavigate,
         onSort: this.onSort,
         onFilter: this.onFilter,
         loadFirstPage: this.loadFirstPage,
@@ -172,6 +163,7 @@ export class CanvasGrid
         loadPreviousPage: this.loadPreviousPage,
         isFullScreen: this.isFullScreen,
         onFullScreen: this.onFullScreen,
+        context: this.context,
       }),
       this.container
     );
